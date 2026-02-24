@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi import HTTPException
-from pydantic import BaseModel
-from typing import List
+from schemas import TodoCreate, Todo, TodoListResponse
+import crud
+from typing import Optional
+from fastapi import Query
 
 app = FastAPI()
 
-# ===== CẤP 0 =====
 @app.get("/")
 def read_root():
     return {"message": "Hello To-Do API"}
@@ -14,63 +15,46 @@ def read_root():
 def health_check():
     return {"status": "ok"}
 
-# ===== CẤP 1 =====
-class TodoCreate(BaseModel):
-    title: str
-    is_done: bool = False
-
-class Todo(TodoCreate):
-    id: int
-
-
-todos: List[Todo] = []
-current_id = 1
-
-
 @app.post("/todos", response_model=Todo)
 def create_todo(todo: TodoCreate):
-    global current_id
+    return crud.create_todo(todo)
 
-    new_todo = Todo(
-        id=current_id,
-        title=todo.title,
-        is_done=todo.is_done
+
+@app.get("/todos", response_model=TodoListResponse)
+def get_todos(
+    is_done: Optional[bool] = None,
+    q: Optional[str] = None,
+    sort: Optional[str] = Query(None, regex="^-?created_at$"),
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0)
+):
+    return crud.get_all_todos(
+        is_done=is_done,
+        q=q,
+        sort=sort,
+        limit=limit,
+        offset=offset
     )
-    todos.append(new_todo)
-    current_id += 1
-    return new_todo
-
-
-@app.get("/todos", response_model=List[Todo])
-def get_todos():
-    return todos
-
 
 @app.get("/todos/{todo_id}", response_model=Todo)
 def get_todo(todo_id: int):
-    for todo in todos:
-        if todo.id == todo_id:
-            return todo
-    raise HTTPException(status_code=404, detail="Todo not found")
+    todo = crud.get_todo_by_id(todo_id)
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found")
+    return todo
 
 
 @app.put("/todos/{todo_id}", response_model=Todo)
 def update_todo(todo_id: int, updated_todo: TodoCreate):
-    for index, todo in enumerate(todos):
-        if todo.id == todo_id:
-            todos[index] = Todo(
-                id=todo_id,
-                title=updated_todo.title,
-                is_done=updated_todo.is_done
-            )
-            return todos[index]
-    raise HTTPException(status_code=404, detail="Todo not found")
+    todo = crud.update_todo(todo_id, updated_todo)
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found")
+    return todo
 
 
 @app.delete("/todos/{todo_id}")
 def delete_todo(todo_id: int):
-    for index, todo in enumerate(todos):
-        if todo.id == todo_id:
-            todos.pop(index)
-            return {"message": "Todo deleted successfully"}
-    raise HTTPException(status_code=404, detail="Todo not found")
+    todo = crud.delete_todo(todo_id)
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found")
+    return {"message": "Todo deleted successfully"}
