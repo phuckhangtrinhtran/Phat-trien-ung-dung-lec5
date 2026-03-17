@@ -1,55 +1,48 @@
-from typing import Optional
+from sqlalchemy.orm import Session
 from repositories.todo_repository import TodoRepository
-from schemas.todo import TodoCreate
+from schemas.todo import TodoCreate, TodoUpdate
+
 
 class TodoService:
+
     def __init__(self, repository: TodoRepository):
         self.repository = repository
 
-    def create_todo(self, todo: TodoCreate):
-        return self.repository.create(todo)
+    def create_todo(self, db: Session, todo: TodoCreate):
+        return self.repository.create(db, todo)
 
     def get_all_todos(
         self,
-        is_done: Optional[bool],
-        q: Optional[str],
-        sort: Optional[str],
-        limit: int,
-        offset: int
+        db: Session,
+        is_done,
+        q,
+        sort,
+        limit,
+        offset,
     ):
-        result = self.repository.get_all()
-
-        # Filter
-        if is_done is not None:
-            result = [t for t in result if t.is_done == is_done]
-
-        # Search
-        if q:
-            result = [t for t in result if q.lower() in t.title.lower()]
-
-        total = len(result)
-
-        # Sort
-        if sort == "created_at":
-            result = sorted(result, key=lambda x: x.created_at)
-        elif sort == "-created_at":
-            result = sorted(result, key=lambda x: x.created_at, reverse=True)
-
-        # Pagination
-        result = result[offset: offset + limit]
+        items, total = self.repository.get_all(
+            db, is_done, q, sort, limit, offset
+        )
 
         return {
-            "items": result,
+            "items": items,
             "total": total,
             "limit": limit,
-            "offset": offset
+            "offset": offset,
         }
 
-    def get_todo(self, todo_id: int):
-        return self.repository.get_by_id(todo_id)
+    def get_todo(self, db: Session, todo_id: int):
+        return self.repository.get_by_id(db, todo_id)
 
-    def update_todo(self, todo_id: int, updated: TodoCreate):
-        return self.repository.update(todo_id, updated)
+    def update_partial(self, db: Session, todo_id: int, data: TodoUpdate):
+        return self.repository.partial_update(
+            db,
+            todo_id,
+            data.model_dump(exclude_unset=True),
+        )
 
-    def delete_todo(self, todo_id: int):
-        return self.repository.delete(todo_id)
+    def complete_todo(self, db: Session, todo_id: int):
+        return self.repository.mark_complete(db, todo_id)
+
+    def delete_todo(self, db: Session, todo_id: int):
+        return self.repository.delete(db, todo_id)

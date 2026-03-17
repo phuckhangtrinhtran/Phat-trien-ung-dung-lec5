@@ -1,11 +1,11 @@
 from fastapi import FastAPI
-from core.config import settings
 from routers.todo_router import router as todo_router
 
-app = FastAPI(
-    title=settings.APP_NAME,
-    debug=settings.DEBUG
-)
+from core.database import engine, Base
+from models.todo import Todo   # import để SQLAlchemy biết model
+
+app = FastAPI()
+
 
 @app.get("/")
 def read_root():
