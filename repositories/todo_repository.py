@@ -1,31 +1,34 @@
 from sqlalchemy.orm import Session
 from models.todo import Todo
-from schemas.todo import TodoCreate
 from typing import Optional
 
 
 class TodoRepository:
 
-    def create(self, db: Session, todo: TodoCreate):
-        db_todo = Todo(**todo.model_dump())
-        db.add(db_todo)
+    def create_todo_repo(self, db: Session, todo, user_id: int):
+        new_todo = Todo(**todo.dict(), owner_id=user_id)
+        db.add(new_todo)
         db.commit()
-        db.refresh(db_todo)
-        return db_todo
+        db.refresh(new_todo)
+        return new_todo
 
-    def get_by_id(self, db: Session, todo_id: int):
-        return db.query(Todo).filter(Todo.id == todo_id).first()
+    def get_by_id(self, db: Session, todo_id: int, user_id: int):
+        return db.query(Todo).filter(
+            Todo.id == todo_id,
+            Todo.owner_id == user_id
+        ).first()
 
     def get_all(
         self,
         db: Session,
+        user_id: int,
         is_done: Optional[bool],
         q: Optional[str],
         sort: Optional[str],
         limit: int,
         offset: int,
     ):
-        query = db.query(Todo)
+        query = db.query(Todo).filter(Todo.owner_id == user_id)
 
         if is_done is not None:
             query = query.filter(Todo.is_done == is_done)
@@ -44,8 +47,8 @@ class TodoRepository:
 
         return items, total
 
-    def partial_update(self, db: Session, todo_id: int, data: dict):
-        todo = self.get_by_id(db, todo_id)
+    def partial_update(self, db: Session, todo_id: int, user_id: int, data: dict):
+        todo = self.get_by_id(db, todo_id, user_id)
         if not todo:
             return None
 
@@ -56,8 +59,8 @@ class TodoRepository:
         db.refresh(todo)
         return todo
 
-    def mark_complete(self, db: Session, todo_id: int):
-        todo = self.get_by_id(db, todo_id)
+    def mark_complete(self, db: Session, todo_id: int, user_id: int):
+        todo = self.get_by_id(db, todo_id, user_id)
         if not todo:
             return None
 
@@ -66,8 +69,8 @@ class TodoRepository:
         db.refresh(todo)
         return todo
 
-    def delete(self, db: Session, todo_id: int):
-        todo = self.get_by_id(db, todo_id)
+    def delete(self, db: Session, todo_id: int, user_id: int):
+        todo = self.get_by_id(db, todo_id, user_id)
         if not todo:
             return None
 

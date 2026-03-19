@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from routers.todo_router import router as todo_router
 
 from core.database import engine, Base
-from models.todo import Todo   # import để SQLAlchemy biết model
+from models.todo import Todo  
+from routers.auth import router as auth_router
+from models import user 
 
 app = FastAPI()
 
@@ -15,4 +17,6 @@ def read_root():
 def health_check():
     return {"status": "ok"}
 
+Base.metadata.create_all(bind=engine)
 app.include_router(todo_router)
+app.include_router(auth_router)

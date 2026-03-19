@@ -1,14 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
+from dependencies.auth import get_current_user
 from typing import Optional
-
 from core.database import get_db
-from schemas.todo import (
-    TodoCreate,
-    TodoResponse,
-    TodoListResponse,
-    TodoUpdate,
-)
+from schemas.todo import TodoCreate, TodoResponse, TodoUpdate, TodoListResponse
 from repositories.todo_repository import TodoRepository
 from services.todo_service import TodoService
 
@@ -19,25 +14,43 @@ service = TodoService(repository)
 
 
 @router.post("/", response_model=TodoResponse)
-def create_todo(todo: TodoCreate, db: Session = Depends(get_db)):
-    return service.create_todo(db, todo)
+def create_todo(
+    todo: TodoCreate,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    return service.create_todo(db, todo, user.id)
 
 
 @router.get("/", response_model=TodoListResponse)
-def get_todos(
-    is_done: Optional[bool] = None,
-    q: Optional[str] = None,
-    sort: Optional[str] = Query(None, pattern="^-?created_at$"),
-    limit: int = Query(10, ge=1, le=100),
-    offset: int = Query(0, ge=0),
+def read_todos(
+    is_done: Optional[bool] = Query(None),
+    q: Optional[str] = Query(None),
+    sort: Optional[str] = Query(None),
+    limit: int = Query(100),
+    offset: int = Query(0),
+
     db: Session = Depends(get_db),
+    user=Depends(get_current_user)
 ):
-    return service.get_all_todos(db, is_done, q, sort, limit, offset)
+    return service.get_todos(
+        db,
+        user.id,
+        is_done,
+        q,
+        sort,
+        limit,
+        offset
+    )
 
 
 @router.get("/{todo_id}", response_model=TodoResponse)
-def get_todo(todo_id: int, db: Session = Depends(get_db)):
-    todo = service.get_todo(db, todo_id)
+def get_todo(
+    todo_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    todo = service.get_todo(db, todo_id, user.id)
     if not todo:
         raise HTTPException(status_code=404, detail="Todo not found")
     return todo
@@ -48,24 +61,33 @@ def partial_update(
     todo_id: int,
     data: TodoUpdate,
     db: Session = Depends(get_db),
+    user=Depends(get_current_user)
 ):
-    todo = service.update_partial(db, todo_id, data)
+    todo = service.update_partial(db, todo_id, user.id, data)
     if not todo:
         raise HTTPException(status_code=404, detail="Todo not found")
     return todo
 
 
 @router.post("/{todo_id}/complete", response_model=TodoResponse)
-def complete(todo_id: int, db: Session = Depends(get_db)):
-    todo = service.complete_todo(db, todo_id)
+def complete(
+    todo_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    todo = service.complete_todo(db, todo_id, user.id)
     if not todo:
         raise HTTPException(status_code=404, detail="Todo not found")
     return todo
 
 
 @router.delete("/{todo_id}")
-def delete(todo_id: int, db: Session = Depends(get_db)):
-    todo = service.delete_todo(db, todo_id)
+def delete(
+    todo_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    todo = service.delete_todo(db, todo_id, user.id)
     if not todo:
         raise HTTPException(status_code=404, detail="Todo not found")
     return {"message": "Todo deleted successfully"}
