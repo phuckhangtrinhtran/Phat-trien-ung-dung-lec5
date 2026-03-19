@@ -48,3 +48,9 @@ class TodoService:
 
     def delete_todo(self, db: Session, todo_id: int, user_id: int):
         return self.repository.delete(db, todo_id, user_id)
+    
+    def get_overdue(self, db, user_id):
+        return self.repository.get_overdue(db, user_id)
+
+    def get_today(self, db, user_id):
+        return self.repository.get_today(db, user_id)

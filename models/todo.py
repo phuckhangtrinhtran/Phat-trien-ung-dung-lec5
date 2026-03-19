@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Foreign
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from core.database import Base
+from sqlalchemy import JSON 
 
 
 class Todo(Base):
@@ -25,3 +26,5 @@ class Todo(Base):
         server_default=func.now(),
         onupdate=func.now()
     )
+    due_date = Column(DateTime, nullable=True) 
+    tags = Column(JSON, default=[])

@@ -12,6 +12,19 @@ router = APIRouter(prefix="/api/v1/todos", tags=["todos"])
 repository = TodoRepository()
 service = TodoService(repository)
 
+@router.get("/overdue", response_model=list[TodoResponse])
+def overdue_todos(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    return service.get_overdue(db, user.id)
+
+@router.get("/today", response_model=list[TodoResponse])
+def today_todos(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    return service.get_today(db, user.id)
 
 @router.post("/", response_model=TodoResponse)
 def create_todo(
@@ -91,3 +104,4 @@ def delete(
     if not todo:
         raise HTTPException(status_code=404, detail="Todo not found")
     return {"message": "Todo deleted successfully"}
+
