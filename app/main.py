@@ -1,10 +1,10 @@
 from fastapi import FastAPI
-from routers.todo_router import router as todo_router
+from app.routers.todo_router import router as todo_router
 
-from core.database import engine, Base
-from models.todo import Todo  
-from routers.auth import router as auth_router
-from models import user 
+from app.core.database import engine, Base
+from app.models.todo import Todo  
+from app.routers.auth import router as auth_router
+from app.models import user 
 
 app = FastAPI()
 

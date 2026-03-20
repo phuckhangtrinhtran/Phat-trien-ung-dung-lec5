@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from repositories.todo_repository import TodoRepository
-from schemas.todo import TodoCreate, TodoUpdate
+from app.repositories.todo_repository import TodoRepository
+from app.schemas.todo import TodoCreate, TodoUpdate
 
 
 class TodoService:
