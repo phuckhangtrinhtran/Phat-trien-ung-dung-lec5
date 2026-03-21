@@ -3,6 +3,8 @@ from app.models.todo import Todo
 from typing import Optional
 from datetime import datetime, timedelta
 
+from app.schemas import todo
+
 
 class TodoRepository:
 
@@ -16,7 +18,8 @@ class TodoRepository:
     def get_by_id(self, db: Session, todo_id: int, user_id: int):
         return db.query(Todo).filter(
             Todo.id == todo_id,
-            Todo.owner_id == user_id
+            Todo.owner_id == user_id,
+            Todo.deleted_at == None
         ).first()
 
     def get_all(
@@ -29,7 +32,7 @@ class TodoRepository:
         limit: int,
         offset: int,
     ):
-        query = db.query(Todo).filter(Todo.owner_id == user_id)
+        query = db.query(Todo).filter(Todo.owner_id == user_id, Todo.deleted_at == None)
 
         if is_done is not None:
             query = query.filter(Todo.is_done == is_done)
@@ -75,14 +78,16 @@ class TodoRepository:
         if not todo:
             return None
 
-        db.delete(todo)
+        todo.deleted_at = datetime.utcnow() 
         db.commit()
+        db.refresh(todo)
         return todo
     
     def get_overdue(self, db, user_id):
         return db.query(Todo).filter(
             Todo.owner_id == user_id,
             Todo.is_done == False,
+            Todo.deleted_at.is_(None),
             Todo.due_date < datetime.utcnow()
         ).all()
 
@@ -94,6 +99,26 @@ class TodoRepository:
         return db.query(Todo).filter(
             Todo.owner_id == user_id,
             Todo.is_done == False,
+            Todo.deleted_at.is_(None),
             Todo.due_date >= today_start,
             Todo.due_date < today_end
+        ).all()
+    
+    def restore(self, db: Session, todo_id: int, user_id: int):
+        todo = db.query(Todo).filter(
+            Todo.id == todo_id,
+            Todo.owner_id == user_id,
+            Todo.deleted_at.isnot(None)
+        ).first()
+        if not todo:
+            return None
+        todo.deleted_at = None
+        db.commit()
+        db.refresh(todo)
+        return todo
+
+    def get_deleted(self, db: Session, user_id: int):
+        return db.query(Todo).filter(
+            Todo.owner_id == user_id,
+            Todo.deleted_at.isnot(None)
         ).all()

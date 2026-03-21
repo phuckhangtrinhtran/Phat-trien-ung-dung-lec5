@@ -54,3 +54,9 @@ class TodoService:
 
     def get_today(self, db, user_id):
         return self.repository.get_today(db, user_id)
+    
+    def get_deleted_todos(self, db: Session, user_id: int):
+        return self.repository.get_deleted(db, user_id)
+
+    def restore_todo(self, db: Session, todo_id: int, user_id: int):
+        return self.repository.restore(db, todo_id, user_id)

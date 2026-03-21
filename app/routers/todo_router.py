@@ -104,3 +104,21 @@ def delete(
         raise HTTPException(status_code=404, detail="Todo not found")
     return {"message": "Todo deleted successfully"}
 
+@router.get("/trash", response_model=list[TodoResponse])
+def get_trash(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    return service.get_deleted_todos(db, user.id)
+
+
+@router.post("/{todo_id}/restore", response_model=TodoResponse)
+def restore_todo(
+    todo_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    todo = service.restore_todo(db, todo_id, user.id)
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found or not deleted")
+    return todo

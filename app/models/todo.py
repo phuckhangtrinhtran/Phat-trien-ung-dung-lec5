@@ -28,3 +28,5 @@ class Todo(Base):
     )
     due_date = Column(DateTime, nullable=True) 
     tags = Column(JSON, default=[])
+
+    deleted_at = Column(DateTime(timezone=True), nullable=True, default=None)
