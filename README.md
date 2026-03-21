@@ -211,6 +211,7 @@ Test các case:
 | 5     | Authentication      | Hoàn thành |
 | 6     | Deadline + tags     | Hoàn thành |
 | 7     | Testing + Docker    | Hoàn thành |
+| 8     | Add features        | Hoàn thành |
 
 ---
 
